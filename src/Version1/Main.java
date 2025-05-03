@@ -17,7 +17,7 @@ public class Main {
         timer.start();
         result = a1.multiplication(b1);
         elapsedTime = timer.end();
-        System.out.println("Time taken is "+elapsedTime);
+        System.out.println("500x500 Time taken with Sequential: "+elapsedTime+" ms");
         // 500x500 end
 
         // 1000x1000 start
@@ -29,7 +29,7 @@ public class Main {
         timer.start();
         result = a2.multiplication(b2);
         elapsedTime = timer.end();
-        System.out.println("Time taken is "+elapsedTime);
+        System.out.println("1000x1000 Time taken with Sequential: "+elapsedTime+" ms");
         // 1000x1000 end
 
         // 5000x5000 start
@@ -41,7 +41,7 @@ public class Main {
         timer.start();
         result = a3.multiplication(b3);
         elapsedTime = timer.end();
-        System.out.println("Time taken is "+elapsedTime);
+        System.out.println("5000x5000 Time taken with Sequential: "+elapsedTime+" ms");
         // 5000x5000 end
     }
 }

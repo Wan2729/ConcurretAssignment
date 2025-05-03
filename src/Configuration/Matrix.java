@@ -3,8 +3,8 @@ package Configuration;
 import java.util.Random;
 
 public class Matrix {
-    int row, col;
-    double[][] matrix;
+    public int row, col;
+    public double[][] matrix;
     boolean empty = true;
     boolean init = false;
 
