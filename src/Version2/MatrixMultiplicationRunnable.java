@@ -17,11 +17,12 @@ public class MatrixMultiplicationRunnable implements Runnable{
 
     @Override
     public void run() {
-        for(int i=0 ; i< B.col ; i++){
-            double sum = 0;
-            for(int j=0 ; j< A.col ; j++){
-                result.matrix[rowA][i] += A.matrix[rowA][j] * B.matrix[j][i];
+        for(int i=0 ; i< B.col ; i++){ // iterate every matrix B's columns
+            double sum=0;
+            for(int j=0 ; j< A.col ; j++){ // iterate again for every matrix A's column to do multiplication
+                sum += A.matrix[rowA][j] * B.matrix[j][i]; // Multiply the array and sum up to its result's row col
             }
+            result.matrix[rowA][i] = sum;
         }
     }
 }
