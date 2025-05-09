@@ -60,7 +60,7 @@ public class MutualExclusion {
         multiplyWithThreads(a2, b2);
         elapsedTime = timer.end();
         System.out.println(row +"*" +col +" Time taken with Thread pool: " + elapsedTime + " ms");
-    }
+    } //
 
 //    public static Matrix multiplyWithThreads(Matrix A, Matrix B) throws InterruptedException {
 //        if (A.col != B.row) return null;
