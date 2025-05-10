@@ -1,30 +1,26 @@
 package version3.parallel.Forkjoin;
 
+import java.lang.management.ManagementFactory;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.lang.management.ThreadMXBean;
+import com.sun.management.OperatingSystemMXBean;
 
+/**
+ * Enhanced MatrixMultiplier with improved performance metrics
+ */
 public class MatrixMultiplier {
 
-    // Configurable parameters
-    private static final int[] MATRIX_SIZES = {500, 1000, 2000, 5000};
-    private static final int NUM_WARMUP_RUNS = 2;
-    private static final int NUM_BENCHMARK_RUNS = 5;
-    private static final String RESULTS_FILE = "matrix_multiplication_results.csv";
+    // Reusable ForkJoinPool to avoid creation overhead
+    private static final ForkJoinPool DEFAULT_POOL = new ForkJoinPool(
+            Runtime.getRuntime().availableProcessors());
 
-    // Memory tracking
-    private static MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-    private static ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-
+    /**
+     * Generates a random matrix with specified dimensions
+     *
+     * @param rows Number of rows
+     * @param cols Number of columns
+     * @return A randomly filled matrix
+     */
     public static double[][] generateRandomMatrix(int rows, int cols) {
         double[][] matrix = new double[rows][cols];
         Random rand = new Random();
@@ -36,144 +32,188 @@ public class MatrixMultiplier {
         return matrix;
     }
 
-    // Helper method to print memory usage
-    private static void printMemoryUsage(String label) {
-        MemoryUsage heapMemoryUsage = memoryBean.getHeapMemoryUsage();
-        MemoryUsage nonHeapMemoryUsage = memoryBean.getNonHeapMemoryUsage();
-
-        System.out.println(label + " Memory Usage:");
-        System.out.println("  Heap Used: " + formatMemory(heapMemoryUsage.getUsed()));
-        System.out.println("  Heap Committed: " + formatMemory(heapMemoryUsage.getCommitted()));
-        System.out.println("  Non-Heap Used: " + formatMemory(nonHeapMemoryUsage.getUsed()));
-    }
-
-    private static String formatMemory(long bytes) {
-        return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
-    }
-
-    // Method to register MBean for profiling
-    private static void registerProfilingMBean() {
-        try {
-            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            ObjectName name = new ObjectName("version3.parallel.Forkjoin:type=MatrixMultiplier");
-            // Register custom MBean if needed
-            System.out.println("JMX profiling enabled. Connect with JVisualVM to this process.");
-            System.out.println("Process ID: " + ManagementFactory.getRuntimeMXBean().getName());
-        } catch (Exception e) {
-            System.err.println("Failed to register profiling MBean: " + e.getMessage());
+    /**
+     * Multiplies two matrices using ForkJoin parallelism with default pool
+     *
+     * @param A First matrix
+     * @param B Second matrix
+     * @return Result matrix C = A * B
+     */
+    public static double[][] multiplyMatrices(double[][] A, double[][] B) {
+        // Validate matrix dimensions
+        if (A[0].length != B.length) {
+            throw new IllegalArgumentException("Matrix dimensions are incompatible for multiplication");
         }
+
+        // Create result matrix
+        double[][] C = new double[A.length][B[0].length];
+
+        // Use transpose optimization for better cache locality
+        double[][] transposedB = transpose(B);
+
+        // Use the default pool
+        DEFAULT_POOL.invoke(new MatrixMultiplyTask(A, transposedB, C, 0, A.length, true));
+
+        return C;
     }
 
-    // Helper method to write results to CSV file
-    private static void writeResultsToFile(String matrixSize, String algorithm, double executionTime,
-            long memoryUsed, int numThreads) {
-        try ( BufferedWriter writer = new BufferedWriter(new FileWriter(RESULTS_FILE, true))) {
-            if (!java.nio.file.Files.exists(java.nio.file.Paths.get(RESULTS_FILE))) {
-                writer.write("Matrix Size,Algorithm,Execution Time (ms),Memory Used (MB),Threads\n");
+    /**
+     * Multiplies two matrices using ForkJoin parallelism with specified number
+     * of threads
+     *
+     * @param A First matrix
+     * @param B Second matrix
+     * @param numThreads Number of threads to use in the ForkJoinPool
+     * @return Result matrix C = A * B
+     */
+    public static double[][] multiplyMatrices(double[][] A, double[][] B, int numThreads) {
+        // Validate matrix dimensions
+        if (A[0].length != B.length) {
+            throw new IllegalArgumentException("Matrix dimensions are incompatible for multiplication");
+        }
+
+        // Create result matrix
+        double[][] C = new double[A.length][B[0].length];
+
+        // Transpose B for better cache performance
+        double[][] transposedB = transpose(B);
+
+        // Use custom ForkJoinPool size
+        ForkJoinPool pool = new ForkJoinPool(numThreads);
+        pool.invoke(new MatrixMultiplyTask(A, transposedB, C, 0, A.length, true));
+        pool.shutdown();
+
+        return C;
+    }
+
+    /**
+     * Transpose a matrix for better cache performance
+     *
+     * @param matrix Original matrix
+     * @return Transposed matrix
+     */
+    public static double[][] transpose(double[][] matrix) {
+        int rows = matrix.length;
+        int cols = matrix[0].length;
+        double[][] result = new double[cols][rows];
+
+        // Process in blocks for better cache behavior
+        final int blockSize = 32;
+        for (int i0 = 0; i0 < rows; i0 += blockSize) {
+            int iLimit = Math.min(i0 + blockSize, rows);
+
+            for (int j0 = 0; j0 < cols; j0 += blockSize) {
+                int jLimit = Math.min(j0 + blockSize, cols);
+
+                for (int i = i0; i < iLimit; i++) {
+                    for (int j = j0; j < jLimit; j++) {
+                        result[j][i] = matrix[i][j];
+                    }
+                }
             }
-            writer.write(matrixSize + "," + algorithm + "," + executionTime + ","
-                    + (memoryUsed / (1024.0 * 1024.0)) + "," + numThreads + "\n");
-        } catch (IOException e) {
-            System.err.println("Error writing to results file: " + e.getMessage());
         }
+
+        return result;
     }
 
-    // Improved benchmark method
-    private static void runBenchmark(int size, int numThreads) {
-        System.out.println("\n========================================");
-        System.out.println("Running benchmark for " + size + "x" + size + " matrices with " + numThreads + " threads");
-        System.out.println("========================================");
+    /**
+     * Run a benchmark measuring time, memory and CPU usage
+     *
+     * @param size Matrix size
+     * @param threads Number of threads
+     * @return Performance metrics
+     */
+    public static BenchmarkResult runBenchmark(int size, int threads) {
+        BenchmarkResult result = new BenchmarkResult();
+        result.matrixSize = size;
+        result.threadCount = threads;
 
-        // Generate matrices
-        System.out.println("Generating matrices...");
+        // Force garbage collection before test
+        System.gc();
+
+        // Measure memory before
+        Runtime runtime = Runtime.getRuntime();
+        long memoryBefore = runtime.totalMemory() - runtime.freeMemory();
+
+        // Get CPU time before
+        OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
+                OperatingSystemMXBean.class);
+        long cpuTimeBefore = osBean.getProcessCpuTime();
+
+        // Generate test matrices
         double[][] A = generateRandomMatrix(size, size);
         double[][] B = generateRandomMatrix(size, size);
-        double[][] C = new double[size][size];
 
-        // Warm-up runs
-        System.out.println("Performing " + NUM_WARMUP_RUNS + " warm-up runs...");
-        for (int i = 0; i < NUM_WARMUP_RUNS; i++) {
-            C = new double[size][size];
-            ForkJoinPool pool = new ForkJoinPool(numThreads);
-            pool.invoke(new MatrixMultiplyTask(A, B, C, 0, size));
-            pool.shutdown();
-        }
+        // Perform multiplication with time measurement
+        ForkJoinPool pool = new ForkJoinPool(threads);
+        long startTime = System.nanoTime();
+        double[][] C = multiplyMatrices(A, B, threads);
+        long endTime = System.nanoTime();
 
-        // Force garbage collection before benchmark
+        // Record ForkJoin stats
+        result.stealCount = pool.getStealCount();
+        pool.shutdown();
+
+        // Record time
+        result.executionTime = (endTime - startTime) / 1_000_000.0; // Convert to ms
+
+        // Record CPU usage
+        long cpuTimeAfter = osBean.getProcessCpuTime();
+        double cpuUsage = (double) (cpuTimeAfter - cpuTimeBefore) / (endTime - startTime);
+        result.cpuUtilization = cpuUsage * 100.0; // As percentage
+
+        // Force GC again
         System.gc();
-        try {
-            Thread.sleep(1000); // Give GC time to complete
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+
+        // Measure memory after
+        long memoryAfter = runtime.totalMemory() - runtime.freeMemory();
+        result.memoryUsed = (memoryAfter - memoryBefore) / (1024 * 1024); // Convert to MB
+
+        return result;
+    }
+
+    /**
+     * Benchmark result class
+     */
+    public static class BenchmarkResult {
+
+        public int matrixSize;
+        public int threadCount;
+        public double executionTime; // ms
+        public long memoryUsed;      // MB
+        public double cpuUtilization; // %
+        public long stealCount;
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "Size: %d×%d, Threads: %d, Time: %.2f ms, Memory: %d MB, CPU: %.2f%%, Steals: %d",
+                    matrixSize, matrixSize, threadCount, executionTime, memoryUsed,
+                    cpuUtilization, stealCount);
         }
-
-        // Benchmark runs
-        System.out.println("Performing " + NUM_BENCHMARK_RUNS + " benchmark runs...");
-        double totalExecutionTime = 0;
-        long totalMemoryUsed = 0;
-
-        for (int run = 0; run < NUM_BENCHMARK_RUNS; run++) {
-            C = new double[size][size];
-            long memoryBefore = memoryBean.getHeapMemoryUsage().getUsed();
-            long startTime = System.nanoTime();
-
-            ForkJoinPool pool = new ForkJoinPool(numThreads);
-            pool.invoke(new MatrixMultiplyTask(A, B, C, 0, size));
-            pool.shutdown();
-
-            try {
-                // Wait for all tasks to complete
-                pool.awaitTermination(1, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            long endTime = System.nanoTime();
-            long memoryAfter = memoryBean.getHeapMemoryUsage().getUsed();
-
-            double executionTime = (endTime - startTime) / 1_000_000.0; // Convert to ms
-            long memoryUsed = memoryAfter - memoryBefore;
-
-            System.out.printf("Run %d: Execution Time: %.2f ms, Memory Used: %.2f MB%n",
-                    run + 1, executionTime, memoryUsed / (1024.0 * 1024.0));
-
-            totalExecutionTime += executionTime;
-            totalMemoryUsed += memoryUsed;
-        }
-
-        // Calculate and print average results
-        double avgExecutionTime = totalExecutionTime / NUM_BENCHMARK_RUNS;
-        long avgMemoryUsed = totalMemoryUsed / NUM_BENCHMARK_RUNS;
-
-        System.out.println("\nAverage Results:");
-        System.out.printf("Execution Time: %.2f ms%n", avgExecutionTime);
-        System.out.printf("Memory Used: %.2f MB%n", avgMemoryUsed / (1024.0 * 1024.0));
-
-        // Write results to file
-        writeResultsToFile(size + "x" + size, "ForkJoin", avgExecutionTime, avgMemoryUsed, numThreads);
     }
 
     public static void main(String[] args) {
-        // Register for profiling
-        registerProfilingMBean();
+        // Example usage with performance measurement
+        int[] sizes = {500, 1000, 2000};
+        int[] threadCounts = {1, 2, 4, Runtime.getRuntime().availableProcessors()};
 
-        // Print system information
-        System.out.println("System Information:");
+        System.out.println("Matrix Multiplication Benchmark");
+        System.out.println("==============================");
         System.out.println("Available processors: " + Runtime.getRuntime().availableProcessors());
-        System.out.println("Max memory: " + formatMemory(Runtime.getRuntime().maxMemory()));
 
-        // Run benchmarks for different matrix sizes with different thread counts
-        for (int size : MATRIX_SIZES) {
-            // Run with default number of threads (equal to processor count)
-            runBenchmark(size, Runtime.getRuntime().availableProcessors());
+        for (int size : sizes) {
+            System.out.println("\nTesting matrices of size " + size + "×" + size);
+            System.out.println("----------------------------------------");
 
-            // Optionally run with different thread counts
-            // Uncomment if you want to test with specific thread counts
-            // runBenchmark(size, 2);
-            // runBenchmark(size, 4);
-            // runBenchmark(size, 8);
+            for (int threads : threadCounts) {
+                // Run warm-up
+                runBenchmark(size, threads);
+
+                // Run actual benchmark
+                BenchmarkResult result = runBenchmark(size, threads);
+                System.out.println(result);
+            }
         }
-
-        System.out.println("\nAll benchmarks completed. Results saved to " + RESULTS_FILE);
     }
 }
