@@ -1,0 +1,17 @@
+Size,Threads,Time(ms),Memory(MB),CPUUtilization(%),Speedup, Efficiency(%)
+500,Sequential,353,4,100.00,1.00,100.00
+500,Concurrent - Multiple Threads (No ThreadPool),208,6,0.34,1.70,0.34
+500,Concurrent - ThreadPool (Assign Thread per Row),135,9,21.79,2.61,21.79
+500,Concurrent - ThreadPool (Assign Thread per Row),96,12,30.64,3.68,30.64
+1000,Sequential,3233,21,100.00,1.00,100.00
+1000,Concurrent - Multiple Threads (No ThreadPool),577,29,0.56,5.60,0.56
+1000,Concurrent - ThreadPool (Assign Thread per Row),507,38,53.14,6.38,53.14
+1000,Concurrent - ThreadPool (Assign Thread per Row),178,48,151.36,18.16,151.36
+2000,Sequential,49728,79,100.00,1.00,100.00
+2000,Concurrent - Multiple Threads (No ThreadPool),9938,110,0.25,5.00,0.25
+2000,Concurrent - ThreadPool (Assign Thread per Row),9803,145,42.27,5.07,42.27
+2000,Concurrent - ThreadPool (Assign Thread per Row),1468,180,282.29,33.87,282.29
+3000,Sequential,249897,250,100.00,1.00,100.00
+3000,Concurrent - Multiple Threads (No ThreadPool),50718,322,0.16,4.93,0.16
+3000,Concurrent - ThreadPool (Assign Thread per Row),48240,399,43.17,5.18,43.17
+3000,Concurrent - ThreadPool (Assign Thread per Row),5254,476,396.36,47.56,396.36
