@@ -1,4 +1,4 @@
-package version3.parallel.Forkjoin;
+package Version3;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
