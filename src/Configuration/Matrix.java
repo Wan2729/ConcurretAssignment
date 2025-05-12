@@ -1,29 +1,29 @@
 package Configuration;
 
+import javax.swing.*;
 import java.util.Random;
 
 public class Matrix {
     public int row, col;
     public double[][] matrix;
-    boolean empty = true;
-    boolean init = false;
+    public JFrame frame;
+    public JProgressBar progressBar;
 
     public Matrix(int row, int column){
         this.row = row;
         this.col = column;
         matrix = new double[row][column];
-        init = true;
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
     }
 
     public void assignRandom(){
-        if(!init){return;}
         Random random = new Random();
         for(int i=0; i<row; ++i ){
             for(int j=0; j<col; ++j ){
                 matrix[i][j] = random.nextDouble(1000);
             }
         }
-        empty = false;
     }
 
     public Matrix multiplication(Matrix a) {
@@ -38,6 +38,13 @@ public class Matrix {
                 }
                 result.matrix[i][j] = sum; // Assign the computed value
             }
+
+            // Update the progress bar
+            int progress = (int) (((double) (i + 1) / this.row) * 100);
+            SwingUtilities.invokeLater(() -> {
+                progressBar.setValue(progress);
+                progressBar.setString("Progress: " + progress + "%");
+            });
         }
 
         return result;
@@ -56,5 +63,9 @@ public class Matrix {
         }
 
         return sb.toString();
+    }
+
+    public JProgressBar getProgressBar() {
+        return progressBar;
     }
 }
