@@ -1,4 +1,4 @@
-package version3.parallel.Forkjoin;
+package Version3;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;

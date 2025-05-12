@@ -1,14 +1,12 @@
-package version3.parallel.Forkjoin;
+package Version3;
 
 import java.lang.management.ManagementFactory;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.management.openmbean.CompositeData;
+
 import com.sun.management.OperatingSystemMXBean;
 import java.io.FileWriter;
 import java.io.IOException;

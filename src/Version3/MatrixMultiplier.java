@@ -1,4 +1,4 @@
-package version3.parallel.Forkjoin;
+package Version3;
 
 import java.lang.management.ManagementFactory;
 import java.util.Random;
