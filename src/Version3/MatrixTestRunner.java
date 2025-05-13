@@ -140,7 +140,7 @@ public class MatrixTestRunner {
     private static void runComprehensiveBenchmark(String resultsDir) {
         System.out.println("\nRunning comprehensive benchmark...");
 
-        int[] sizes = {500, 1000, 2000, 3000};
+        int[] sizes = {500, 1000, 5000};
         int[] threadCounts = {1, 2, 4, 8, Runtime.getRuntime().availableProcessors()};
         int iterations = 3;
 

@@ -147,7 +147,7 @@ public class MatrixTestRunner {
      * Run comprehensive benchmark with various matrix sizes
      */
     private static void runComprehensiveBenchmark(String resultsDir) {
-        int[] sizes = {500, 1000, 2000, 3000};
+        int[] sizes = {500, 1000, 5000};
 
         try ( PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + "/comprehensive-benchmark.csv"))) {
             // Write CSV header
