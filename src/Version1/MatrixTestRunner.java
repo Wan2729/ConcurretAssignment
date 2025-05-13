@@ -3,8 +3,6 @@ package Version1;
 import Configuration.Matrix;
 import Configuration.Memory;
 import Configuration.Timer;
-import Version2.MultiplyWithThreadPool;
-import Version2.MutualExclusion;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
