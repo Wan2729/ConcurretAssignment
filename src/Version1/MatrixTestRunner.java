@@ -16,7 +16,7 @@ public class MatrixTestRunner {
     final static Memory memory = new Memory();
 
     public static void main(String[] args) {
-        System.out.println("Matrix Multiplication Performance Analysis");
+        System.out.println("Matrix Sequential Multiplication Performance Analysis");
         System.out.println("========================================");
         System.out.println("System Information:");
         System.out.println("  Processors: " + Runtime.getRuntime().availableProcessors());
