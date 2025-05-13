@@ -1,11 +1,7 @@
 package Version2;
 import Configuration.*;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-public class MutualExclusion {
+public class MultiplyWithThreads {
     public static void main(String[] args) throws InterruptedException {
         Timer timer = new Timer();
 

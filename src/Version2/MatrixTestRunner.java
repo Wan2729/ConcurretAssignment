@@ -195,7 +195,7 @@ public class MatrixTestRunner {
                 System.gc();
                 memory.start();
                 timer.start();
-                MutualExclusion.multiplyWithThreads(A, B);
+                MultiplyWithThreads.multiplyWithThreads(A, B);
                 totalTime = timer.end();
                 totalMemory = memory.end();
 
