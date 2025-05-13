@@ -19,7 +19,7 @@ public class MatrixTestRunner {
     final static int cores = Runtime.getRuntime().availableProcessors();
 
     public static void main(String[] args) {
-        System.out.println("Matrix Multiplication Performance Analysis");
+        System.out.println("Matrix Concurrent Multiplication Performance Analysis");
         System.out.println("========================================");
         System.out.println("System Information:");
         System.out.println("  Processors: " + Runtime.getRuntime().availableProcessors());
