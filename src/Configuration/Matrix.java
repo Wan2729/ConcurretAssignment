@@ -68,4 +68,50 @@ public class Matrix {
     public JProgressBar getProgressBar() {
         return progressBar;
     }
+
+    public Matrix transpose() {
+        Matrix transposed = new Matrix(this.col, this.row); // Swap row and column sizes
+
+        for (int i = 0; i < this.row; i++) {
+            for (int j = 0; j < this.col; j++) {
+                transposed.matrix[j][i] = this.matrix[i][j]; // Swap indices
+            }
+        }
+
+        return transposed;
+    }
+
+    public Matrix multiplicationBlocked(Matrix a, int blockSize) {
+        if (this.col != a.row) {
+            return null;
+        }
+
+        Matrix result = new Matrix(this.row, a.col);
+
+        for (int i = 0; i < this.row; i += blockSize) {
+            for (int j = 0; j < a.col; j += blockSize) {
+                for (int k = 0; k < this.col; k += blockSize) {
+                    // Process block (tile)
+                    for (int ii = i; ii < Math.min(i + blockSize, this.row); ii++) {
+                        for (int jj = j; jj < Math.min(j + blockSize, a.col); jj++) {
+                            double sum = 0.0;
+                            for (int kk = k; kk < Math.min(k + blockSize, this.col); kk++) {
+                                sum += this.matrix[ii][kk] * a.matrix[kk][jj]; // Multiply and accumulate
+                            }
+                            result.matrix[ii][jj] += sum; // Accumulate in result matrix
+                        }
+                    }
+                }
+            }
+
+            // Update the progress bar
+            int progress = (int) (((double) (i + 1) / this.row) * 100);
+            SwingUtilities.invokeLater(() -> {
+                progressBar.setValue(progress);
+                progressBar.setString("Progress: " + progress + "%");
+            });
+        }
+
+        return result;
+    }
 }
