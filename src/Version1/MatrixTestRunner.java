@@ -121,12 +121,8 @@ public class MatrixTestRunner {
             writer.println("Size,Threads,Time(ms),Memory(MB),CPUUtilization(%),Speedup, Efficiency(%)");
 
             for (int size : sizes) {
-                long singleThreadTime = 0;
                 long totalTime = 0;
                 long totalMemory = 0;
-                double speedup;
-                double efficiency;
-                double cpuUtilization;
 
                 System.out.println("Testing matrix size: " + size + "x" + size);
 
@@ -143,15 +139,15 @@ public class MatrixTestRunner {
                 memory.start();
                 timer.start();
                 A.multiplication(B);
-                singleThreadTime = timer.end();
+                totalTime = timer.end();
                 totalMemory = memory.end();
 
-                System.out.printf("Execution time for sequential size %d: %d ms\n", size, singleThreadTime);
+                System.out.printf("Execution time for sequential size %d: %d ms\n", size, totalTime);
                 System.out.printf("Memory Utilization for sequential size %d: %d MB\n", size, totalMemory);
 
                 // Write to CSV
                 writer.printf("%d,%s,%d,%d,%.2f,%.2f,%.2f\n",
-                        size, "Sequential", singleThreadTime, totalMemory, 100.0, 1.0, 100.0);
+                        size, "Sequential", totalTime, totalMemory, 100.0, 1.0, 100.0);
                 /*
                 Finish using sequential processing
                  */
