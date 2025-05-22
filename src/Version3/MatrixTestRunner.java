@@ -16,7 +16,7 @@ import java.util.concurrent.ForkJoinPool;
 public class MatrixTestRunner {
 
     /**
-     * Main entry point for matrix multiplication testing
+     * Compiled.CompiledVersion entry point for matrix multiplication testing
      */
     public static void main(String[] args) {
         System.out.println("Matrix Parallel Forkjoin Multiplication Performance Analysis");
