@@ -44,33 +44,31 @@ public class CompiledVersion {
                 } catch (NumberFormatException e) {
                     choice = 0;
                 }
-
+                String[] methodSelection = selectComprehensiveBenchmarkMethod(scanner);
                 switch (choice) {
                     case 1:
-                        runQuickTest();
+                        runQuickTest(methodSelection[0], methodSelection[1]);
                         break;
                     case 2:
-                        String[] methodSelection = selectComprehensiveBenchmarkMethod(scanner);
                         runComprehensiveBenchmark(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
-
                     case 3:
-                        runMemoryAnalysis(resultsDir);
+                        runMemoryAnalysis(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 4:
-                        runThresholdOptimizationTest(resultsDir);
+                        runThresholdOptimizationTest(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 5:
-                        runScalabilityTest(resultsDir);
+                        runScalabilityTest(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 6:
-                        runCustomTest(scanner, resultsDir);
+                        runCustomTest(scanner, resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 7:
-                        runCacheEfficiencyTest(resultsDir);
+                        runCacheEfficiencyTest(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 8:
-                        runAllTests(resultsDir);
+                        runAllTests(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 9:
                         System.out.println("Exiting...");
@@ -292,30 +290,107 @@ public class CompiledVersion {
     }
 
 
-    private static void runAllTests(String resultsDir) {
+    private static void runAllTests(String resultsDir, String methodType, String subMethod) {
     }
 
-    private static void runCacheEfficiencyTest(String resultsDir) {
-
-    }
-
-    private static void runCustomTest(Scanner scanner, String resultsDir) {
+    private static void runCacheEfficiencyTest(String resultsDir, String methodType, String subMethod) {
 
     }
 
-    private static void runScalabilityTest(String resultsDir) {
+    private static void runCustomTest(Scanner scanner, String resultsDir, String methodType, String subMethod) {
 
     }
 
-    private static void runThresholdOptimizationTest(String resultsDir) {
+    private static void runScalabilityTest(String resultsDir, String methodType, String subMethod) {
 
     }
 
-    private static void runMemoryAnalysis(String resultsDir) {
+    private static void runThresholdOptimizationTest(String resultsDir, String methodType, String subMethod) {
 
     }
 
-    private static void runQuickTest() {
+    private static void runMemoryAnalysis(String resultsDir, String methodType, String subMethod) {
 
     }
+
+    private static void runQuickTest(String methodType, String subMethod) throws InterruptedException {
+        System.out.println("\nRunning quick test with 500x500 matrix...");
+
+        int size = 500;
+        int threads = Runtime.getRuntime().availableProcessors();
+
+        Matrix A = new Matrix(size, size);
+        Matrix B = new Matrix(size, size);
+        A.assignRandom();
+        B.assignRandom();
+
+        if (methodType.equalsIgnoreCase("Sequential")) {
+            timer.start();
+            Matrix result = A.multiplication(B);
+            long elapsedTime = timer.end();
+
+            System.out.println("Sequential multiplication time: " + elapsedTime + " ms");
+            printSample(result.matrix);
+
+        }
+        else if (methodType.equalsIgnoreCase("Concurrent")) {
+            Matrix result = null;
+            long startTime, endTime;
+
+            switch (subMethod) {
+                case "MultipleThreads":
+                    System.out.println("Multiplying using Multiple Threads (" + threads + " threads)...");
+                    startTime = System.nanoTime();
+                    result = MultiplyWithThreads.multiplyWithThreads(A, B);
+                    endTime = System.nanoTime();
+                    break;
+
+                case "RowPerThread":
+                    System.out.println("Multiplying using ThreadPool (Row per Thread)...");
+                    startTime = System.nanoTime();
+                    result = MultiplyWithThreadPool.assignPerRow(A, B);
+                    endTime = System.nanoTime();
+                    break;
+
+                case "ChunkPerThread":
+                    System.out.println("Multiplying using ThreadPool (Chunk per Thread)...");
+                    startTime = System.nanoTime();
+                    result = MultiplyWithThreadPool.assignPerChunk(A, B);
+                    endTime = System.nanoTime();
+                    break;
+
+                default:
+                    System.out.println("Unknown concurrent method. Skipping...");
+                    return;
+            }
+
+            System.out.printf("Multiplication completed in %.2f ms\n", (endTime - startTime) / 1_000_000.0);
+            printSample(result.matrix);
+        }
+        else if (methodType.equalsIgnoreCase("Parallel")) {
+            System.out.println("Multiplying using ForkJoinPool (Parallel) with " + threads + " threads...");
+            double[][] result;
+            long startTime = System.nanoTime();
+            result = MatrixMultiplier.multiplyMatrices(A.matrix, B.matrix, threads);
+            long endTime = System.nanoTime();
+
+            System.out.printf("Parallel multiplication completed in %.2f ms\n", (endTime - startTime) / 1_000_000.0);
+            printSample(result);
+
+        }
+        else {
+            System.out.println("Invalid method selected.");
+        }
+    }
+
+    private static void printSample(double[][] matrix) {
+        System.out.println("Sample of result matrix (top-left 3x3):");
+        for (int i = 0; i < Math.min(3, matrix.length); i++) {
+            for (int j = 0; j < Math.min(3, matrix[0].length); j++) {
+                System.out.printf("%.2f\t", matrix[i][j]);
+            }
+            System.out.println();
+        }
+    }
+
 }
