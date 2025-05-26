@@ -1,9 +1,11 @@
 package Compiled;
 
 import Configuration.*;
+import Version1.MatrixMemoryProfiler;
 import Version2.MultiplyWithThreadPool;
 import Version2.MultiplyWithThreads;
 import Version3.MatrixMultiplier;
+import Version3.SimpleMatrixBenchmark;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,6 +14,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.concurrent.ForkJoinPool;
 
 public class CompiledVersion {
 
@@ -44,7 +47,19 @@ public class CompiledVersion {
                 } catch (NumberFormatException e) {
                     choice = 0;
                 }
-                String[] methodSelection = selectComprehensiveBenchmarkMethod(scanner);
+                String[] methodSelection = null;
+                switch (choice) {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                        methodSelection = selectComprehensiveBenchmarkMethod(scanner);
+                        break;
+                }
+
                 switch (choice) {
                     case 1:
                         runQuickTest(methodSelection[0], methodSelection[1]);
@@ -62,15 +77,12 @@ public class CompiledVersion {
                         runScalabilityTest(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
                     case 6:
-                        runCustomTest(scanner, resultsDir, methodSelection[0], methodSelection[1]);
-                        break;
-                    case 7:
                         runCacheEfficiencyTest(resultsDir, methodSelection[0], methodSelection[1]);
                         break;
-                    case 8:
-                        runAllTests(resultsDir, methodSelection[0], methodSelection[1]);
+                    case 7:
+                        runAllTests(resultsDir,"All","All");
                         break;
-                    case 9:
+                    case 8:
                         System.out.println("Exiting...");
                         break;
                     default:
@@ -93,10 +105,9 @@ public class CompiledVersion {
         System.out.println("3. Memory Analysis");
         System.out.println("4. Threshold Optimization Test");
         System.out.println("5. Scalability Test (threads vs. speedup)");
-        System.out.println("6. Custom Test");
-        System.out.println("7. Cache Efficiency Test");
-        System.out.println("8. Run All Tests");
-        System.out.println("9. Exit");
+        System.out.println("6. Cache Efficiency Test");
+        System.out.println("7. Run All Tests");
+        System.out.println("8. Exit");
         System.out.print("Enter your choice: ");
     }
 
@@ -291,26 +302,410 @@ public class CompiledVersion {
 
 
     private static void runAllTests(String resultsDir, String methodType, String subMethod) {
+        System.out.println("\nRunning all tests (this may take a while)...");
+
+        String[] methodTypes = {"Sequential", "Concurrent", "Parallel"};
+        String[] concurrentSubMethods = {"MultipleThreads", "RowPerThread", "ChunkPerThread"};
+
+        try {
+            if (methodType.equalsIgnoreCase("All")) {
+                // Run all method types and their respective sub-methods
+                for (String method : methodTypes) {
+                    if (method.equals("Concurrent")) {
+                        for (String sub : concurrentSubMethods) {
+                            System.out.println("\n--- Running tests for " + method + " - " + sub + " ---");
+                            runQuickTest(method, sub);
+                            runComprehensiveBenchmark(resultsDir, method, sub);
+                            runMemoryAnalysis(resultsDir, method, sub);
+                            runThresholdOptimizationTest(resultsDir, method, sub);
+                            runScalabilityTest(resultsDir, method, sub);
+                            runCacheEfficiencyTest(resultsDir, method, sub);
+                        }
+                    } else {
+                        System.out.println("\n--- Running tests for " + method + " ---");
+                        runQuickTest(method, "");
+                        runComprehensiveBenchmark(resultsDir, method, "");
+                        runMemoryAnalysis(resultsDir, method, "");
+                        runThresholdOptimizationTest(resultsDir, method, "");
+                        runScalabilityTest(resultsDir, method, "");
+                        runCacheEfficiencyTest(resultsDir, method, "");
+                    }
+                }
+            } else {
+                // Run selected method and sub-method only
+                runQuickTest(methodType, subMethod);
+                runComprehensiveBenchmark(resultsDir, methodType, subMethod);
+                runMemoryAnalysis(resultsDir, methodType, subMethod);
+                runThresholdOptimizationTest(resultsDir, methodType, subMethod);
+                runScalabilityTest(resultsDir, methodType, subMethod);
+                runCacheEfficiencyTest(resultsDir, methodType, subMethod);
+            }
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.out.println("\nAll tests completed. Results saved to " + resultsDir);
     }
+
+
+
 
     private static void runCacheEfficiencyTest(String resultsDir, String methodType, String subMethod) {
+        System.out.println("\nRunning cache efficiency test (" + methodType + ")...");
 
-    }
+        int size = 2000;
+        int[] blockSizes = {8, 16, 32, 64, 128, 256};
+        int iterations = 3;
 
-    private static void runCustomTest(Scanner scanner, String resultsDir, String methodType, String subMethod) {
+        boolean isParallel = methodType.equalsIgnoreCase("parallel");
 
+        String fileName = isParallel ? "/cache-efficiency.csv" : "/cache-efficiency-sequential.csv";
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + fileName))) {
+            writer.println("BlockSize,StandardTime(ms),TransposedTime(ms),Improvement(%)");
+
+            System.out.println("Generating " + size + "x" + size + " matrices...");
+
+            if (isParallel) {
+                double[][] A = MatrixMultiplier.generateRandomMatrix(size, size);
+                double[][] B = MatrixMultiplier.generateRandomMatrix(size, size);
+                double[][] transposedB = MatrixMultiplier.transpose(B);
+                int threads = Runtime.getRuntime().availableProcessors();
+
+                for (int blockSize : blockSizes) {
+                    System.out.println("Testing block size: " + blockSize);
+
+                    double standardTotalTime = 0;
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("    Iteration " + (i + 1) + "... ");
+                        double[][] C = new double[A.length][B[0].length];
+
+                        long start = System.nanoTime();
+                        ForkJoinPool pool = new ForkJoinPool(threads);
+                        pool.invoke(new SimpleMatrixBenchmark.CustomThresholdTask(
+                                A, B, C, 0, A.length, 128, blockSize, false));
+                        pool.shutdown();
+                        long end = System.nanoTime();
+
+                        double time = (end - start) / 1_000_000.0;
+                        standardTotalTime += time;
+                        System.out.println(time + " ms");
+                    }
+
+                    double standardAvg = standardTotalTime / iterations;
+
+                    double transposedTotalTime = 0;
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("    Iteration " + (i + 1) + "... ");
+                        double[][] C = new double[A.length][B[0].length];
+
+                        long start = System.nanoTime();
+                        ForkJoinPool pool = new ForkJoinPool(threads);
+                        pool.invoke(new SimpleMatrixBenchmark.CustomThresholdTask(
+                                A, transposedB, C, 0, A.length, 128, blockSize, true));
+                        pool.shutdown();
+                        long end = System.nanoTime();
+
+                        double time = (end - start) / 1_000_000.0;
+                        transposedTotalTime += time;
+                        System.out.println(time + " ms");
+                    }
+
+                    double transposedAvg = transposedTotalTime / iterations;
+                    double improvement = ((standardAvg - transposedAvg) / standardAvg) * 100;
+
+                    System.out.printf("  Standard Avg: %.2f ms, Transposed Avg: %.2f ms, Improvement: %.2f%%\n",
+                            standardAvg, transposedAvg, improvement);
+                    writer.printf("%d,%.2f,%.2f,%.2f\n", blockSize, standardAvg, transposedAvg, improvement);
+                }
+
+            } else { // Sequential path
+                Timer timer = new Timer();
+                Matrix A = new Matrix(size, size);
+                A.assignRandom();
+                Matrix B = new Matrix(size, size);
+                B.assignRandom();
+                Matrix transposedB = B.transpose();
+
+                for (int blockSize : blockSizes) {
+                    System.out.println("Testing block size: " + blockSize);
+
+                    double standardTotalTime = 0;
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("    Iteration " + (i + 1) + "... ");
+                        Matrix C = new Matrix(size, size);
+                        timer.start();
+                        C = A.multiplicationBlocked(B, blockSize);
+                        long elapsed = timer.end();
+                        standardTotalTime += elapsed;
+                        System.out.println(elapsed + " ms");
+                    }
+
+                    double standardAvg = standardTotalTime / iterations;
+
+                    double transposedTotalTime = 0;
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("    Iteration " + (i + 1) + "... ");
+                        Matrix C = new Matrix(size, size);
+                        timer.start();
+                        C = A.multiplicationBlocked(transposedB, blockSize);
+                        long elapsed = timer.end();
+                        transposedTotalTime += elapsed;
+                        System.out.println(elapsed + " ms");
+                    }
+
+                    double transposedAvg = transposedTotalTime / iterations;
+                    double improvement = ((standardAvg - transposedAvg) / standardAvg) * 100;
+
+                    System.out.printf("  Standard Avg: %.2f ms, Transposed Avg: %.2f ms, Improvement: %.2f%%\n",
+                            standardAvg, transposedAvg, improvement);
+                    writer.printf("%d,%.2f,%.2f,%.2f\n", blockSize, standardAvg, transposedAvg, improvement);
+                }
+            }
+
+            System.out.println("Cache efficiency results saved to " + resultsDir + fileName);
+        } catch (IOException e) {
+            System.err.println("Error writing cache efficiency results: " + e.getMessage());
+        }
     }
 
     private static void runScalabilityTest(String resultsDir, String methodType, String subMethod) {
+        int[] sizes = {500, 1000, 2000, 3000}; // For sequential test
+        int iterations = 3;
 
+        if (methodType.equalsIgnoreCase("Sequential")) {
+            System.out.println("\nRunning scalability test (Sequential Execution)...");
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + "/scalability-test-sequential.csv"))) {
+                writer.println("Size,Time(ms)");
+
+                for (int size : sizes) {
+                    System.out.println("Testing matrix size: " + size);
+                    double totalTime = 0;
+
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("  Iteration " + (i + 1) + "... ");
+
+                        System.gc();
+
+                        Timer timer = new Timer();
+                        Matrix A = new Matrix(size, size);
+                        A.assignRandom();
+                        Matrix B = new Matrix(size, size);
+                        B.assignRandom();
+                        Matrix C = new Matrix(size, size);
+
+                        timer.start();
+                        C = A.multiplication(B);
+                        long elapsed = timer.end();
+
+                        totalTime += elapsed;
+
+                        System.out.println(elapsed + " ms");
+                    }
+
+                    double avgTime = totalTime / iterations;
+                    writer.printf("%d,%.2f\n", size, avgTime);
+                    System.out.printf("  Average: %.2f ms\n", avgTime);
+                }
+
+                System.out.println("Scalability test results saved to " + resultsDir + "/scalability-test-sequential.csv");
+
+            } catch (IOException e) {
+                System.err.println("Error writing scalability results: " + e.getMessage());
+            }
+
+        } else if (methodType.equalsIgnoreCase("Parallel")) {
+            System.out.println("\nRunning scalability test (Parallel Execution)...");
+
+            int size = 2000;
+            int maxThreads = Runtime.getRuntime().availableProcessors() * 2;
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + "/scalability-test.csv"))) {
+                writer.println("Threads,Time(ms),Speedup,Efficiency(%)");
+
+                System.out.println("Generating " + size + "x" + size + " matrices...");
+                double[][] A = MatrixMultiplier.generateRandomMatrix(size, size);
+                double[][] B = MatrixMultiplier.generateRandomMatrix(size, size);
+
+                double baselineTime = 0;
+                System.out.println("Testing single-threaded performance (baseline)...");
+
+                for (int i = 0; i < iterations; i++) {
+                    System.out.print("  Iteration " + (i + 1) + "... ");
+                    System.gc();
+
+                    long startTime = System.nanoTime();
+                    MatrixMultiplier.multiplyMatrices(A, B, 1);
+                    long endTime = System.nanoTime();
+
+                    double executionTime = (endTime - startTime) / 1_000_000.0;
+                    baselineTime += executionTime;
+
+                    System.out.println(executionTime + " ms");
+                }
+
+                baselineTime /= iterations;
+                writer.printf("1,%.2f,%.2f,%.2f\n", baselineTime, 1.0, 100.0);
+                System.out.println("Baseline (1 thread): " + baselineTime + " ms");
+
+                for (int threads = 2; threads <= maxThreads; threads++) {
+                    System.out.println("Testing with " + threads + " threads...");
+                    double totalTime = 0;
+
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("  Iteration " + (i + 1) + "... ");
+                        System.gc();
+
+                        long startTime = System.nanoTime();
+                        MatrixMultiplier.multiplyMatrices(A, B, threads);
+                        long endTime = System.nanoTime();
+
+                        double executionTime = (endTime - startTime) / 1_000_000.0;
+                        totalTime += executionTime;
+
+                        System.out.println(executionTime + " ms");
+                    }
+
+                    double avgTime = totalTime / iterations;
+                    double speedup = baselineTime / avgTime;
+                    double efficiency = (speedup / threads) * 100;
+
+                    writer.printf("%d,%.2f,%.2f,%.2f\n", threads, avgTime, speedup, efficiency);
+                    System.out.printf("  Average: %.2f ms, Speedup: %.2fx, Efficiency: %.2f%%\n",
+                            avgTime, speedup, efficiency);
+                }
+
+                System.out.println("Scalability test results saved to " + resultsDir + "/scalability-test.csv");
+
+            } catch (IOException e) {
+                System.err.println("Error writing scalability results: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Scalability test is not applicable for method type: " + methodType);
+        }
     }
 
-    private static void runThresholdOptimizationTest(String resultsDir, String methodType, String subMethod) {
 
+    private static void runThresholdOptimizationTest(String resultsDir, String methodType, String subMethod) {
+        int size = 2000;
+        int[] thresholds = {32, 64, 128, 256, 512, 1024};
+        int iterations = 3;
+
+        if (methodType.equalsIgnoreCase("Sequential")) {
+            System.out.println("\nRunning threshold optimization test (Sequential Execution)...");
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + "/threshold-optimization-sequential.csv"))) {
+                writer.println("Threshold,Time(ms)");
+
+                Timer timer = new Timer();
+
+                System.out.println("Generating " + size + "x" + size + " matrices...");
+                Matrix A = new Matrix(size, size);
+                A.assignRandom();
+                Matrix B = new Matrix(size, size);
+                B.assignRandom();
+                Matrix transposedB = B.transpose();
+
+                for (int threshold : thresholds) {
+                    System.out.println("Testing threshold: " + threshold);
+                    double totalTime = 0;
+
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("  Iteration " + (i + 1) + "... ");
+                        System.gc();
+                        timer.start();
+                        Matrix C = A.multiplication(transposedB);  // Sequential method
+                        long elapsed = timer.end();
+                        totalTime += elapsed;
+                        System.out.println(elapsed + " ms");
+                    }
+
+                    double avgTime = totalTime / iterations;
+                    writer.printf("%d,%.2f\n", threshold, avgTime);
+                    System.out.println("  Average execution time: " + avgTime + " ms");
+                }
+
+                System.out.println("Threshold optimization results saved to "
+                        + resultsDir + "/threshold-optimization-sequential.csv");
+
+            } catch (IOException e) {
+                System.err.println("Error writing threshold results: " + e.getMessage());
+            }
+
+        } else if (methodType.equalsIgnoreCase("Parallel")) {
+            System.out.println("\nRunning threshold optimization test (Parallel Execution)...");
+
+            int threads = Runtime.getRuntime().availableProcessors();
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(resultsDir + "/threshold-optimization-parallel.csv"))) {
+                writer.println("Threshold,Time(ms)");
+
+                System.out.println("Generating " + size + "x" + size + " matrices...");
+                double[][] A = MatrixMultiplier.generateRandomMatrix(size, size);
+                double[][] B = MatrixMultiplier.generateRandomMatrix(size, size);
+                double[][] transposedB = MatrixMultiplier.transpose(B);
+
+                for (int threshold : thresholds) {
+                    System.out.println("Testing threshold: " + threshold);
+                    double totalTime = 0;
+
+                    for (int i = 0; i < iterations; i++) {
+                        System.out.print("  Iteration " + (i + 1) + "... ");
+                        System.gc();
+                        double[][] C = new double[size][size];
+
+                        long startTime = System.nanoTime();
+                        ForkJoinPool pool = new ForkJoinPool(threads);
+                        pool.invoke(new SimpleMatrixBenchmark.CustomThresholdTask(
+                                A, transposedB, C, 0, A.length, threshold, 32, true));
+                        pool.shutdown();
+                        long endTime = System.nanoTime();
+
+                        double executionTime = (endTime - startTime) / 1_000_000.0;
+                        totalTime += executionTime;
+                        System.out.println(executionTime + " ms");
+                    }
+
+                    double avgTime = totalTime / iterations;
+                    writer.printf("%d,%.2f\n", threshold, avgTime);
+                    System.out.println("  Average execution time: " + avgTime + " ms");
+                }
+
+                System.out.println("Threshold optimization results saved to "
+                        + resultsDir + "/threshold-optimization-parallel.csv");
+
+            } catch (IOException e) {
+                System.err.println("Error writing threshold results: " + e.getMessage());
+            }
+
+        } else {
+            System.out.println("Threshold optimization test is not applicable for method: " + methodType);
+        }
     }
 
     private static void runMemoryAnalysis(String resultsDir, String methodType, String subMethod) {
+            System.out.println("\nRunning memory analysis...");
 
+            if (methodType.equalsIgnoreCase("Sequential")) {
+                // Sequential memory profiling
+                MatrixMemoryProfiler.runMemoryComparisonTestsSequential();
+                MatrixMemoryProfiler.profileMatrixMultiplicationSequential(1500);
+
+            } else if (methodType.equalsIgnoreCase("Parallel")) {
+                // Parallel memory profiling
+                Version3.MatrixMemoryProfiler.runMemoryComparisonTests();
+                Version3.MatrixMemoryProfiler.profileMatrixMultiplication(
+                        1500, Runtime.getRuntime().availableProcessors());
+
+            } else {
+                System.out.println("Invalid method type for memory analysis: " + methodType);
+                System.out.println("Please select either 'Sequential' or 'Parallel'.");
+                return;
+            }
+
+            System.out.println("Memory analysis complete");
     }
 
     private static void runQuickTest(String methodType, String subMethod) throws InterruptedException {

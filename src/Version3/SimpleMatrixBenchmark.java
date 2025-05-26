@@ -258,7 +258,7 @@ public class SimpleMatrixBenchmark {
     /**
      * Custom matrix multiplication task with configurable parameters
      */
-    static class CustomThresholdTask extends RecursiveAction {
+    public static class CustomThresholdTask extends RecursiveAction {
 
         private final double[][] A, B, C;
         private final int startRow, endRow;
