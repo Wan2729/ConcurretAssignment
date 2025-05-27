@@ -65,6 +65,9 @@ public class MatrixTestRunner {
                     case 6:
                         runCacheEfficiencyTestSequential(resultsDir);
                         break;
+                    case 7:
+                        runAllTests(resultsDir);
+                        break;
                     case 9:
                         System.out.println("Exiting...");
                         break;
@@ -351,5 +354,19 @@ public class MatrixTestRunner {
         } catch (IOException e) {
             System.err.println("Error writing cache efficiency results: " + e.getMessage());
         }
+    }
+
+    private static void runAllTests(String resultsDir) {
+        System.out.println("\nRunning all tests (this may take a while)...");
+
+        // Run all tests in sequence
+        runQuickTest();
+        runComprehensiveBenchmark(resultsDir);
+        runMemoryAnalysis(resultsDir);
+        runThresholdOptimizationTestSequential(resultsDir);
+        runScalabilityTestSequential(resultsDir);
+        runCacheEfficiencyTestSequential(resultsDir);
+
+        System.out.println("\nAll tests completed. Results saved to " + resultsDir);
     }
 }
