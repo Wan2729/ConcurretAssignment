@@ -94,6 +94,7 @@ public class MatrixTestRunner {
         System.out.println("4. Threshold Optimization Test");
         System.out.println("5. Scalability Test");
         System.out.println("6. Cache Efficiency Test");
+        System.out.println("7. Run All Tests");
         System.out.println("9. Exit");
         System.out.print("Enter your choice: ");
     }
