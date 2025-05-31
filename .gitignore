@@ -1,30 +1,36 @@
+### Project-specific ###
+/target/
+/out/
+/bin/
+*.csv
+nbactions.xml
+ppm.xml
+
 ### IntelliJ IDEA ###
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+.idea/
+!.idea/codeStyles/
+!.idea/codeStyles/codeStyleConfig.xml
+.idea/*.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/compiler.xml
+.idea/vcs.xml
+*.iml
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+### Build Systems ###
+.gradle/
+build/
+.nb-gradle/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+### Test Results ###
+matrix-results-*
+Version*-matrix-results-*
 
-### VS Code ###
-.vscode/
-
-### Mac OS ###
+### OS Generated ###
 .DS_Store
-/ConcurretAssignment/target/
+Thumbs.db
+
+### Exceptions (keep these) ###
+!src/**/
+!pom.xml
+!README.md

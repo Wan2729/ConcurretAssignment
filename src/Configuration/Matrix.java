@@ -9,7 +9,7 @@ public class Matrix {
     public JFrame frame;
     public JProgressBar progressBar;
 
-    public Matrix(int row, int column){
+    public Matrix(int row, int column) {
         this.row = row;
         this.col = column;
         matrix = new double[row][column];
@@ -17,17 +17,19 @@ public class Matrix {
         progressBar.setStringPainted(true);
     }
 
-    public void assignRandom(){
+    public void assignRandom() {
         Random random = new Random();
-        for(int i=0; i<row; ++i ){
-            for(int j=0; j<col; ++j ){
+        for (int i = 0; i < row; ++i) {
+            for (int j = 0; j < col; ++j) {
                 matrix[i][j] = random.nextDouble(1000);
             }
         }
     }
 
     public Matrix multiplication(Matrix a) {
-        if (this.col != a.row) {return null;}
+        if (this.col != a.row) {
+            return null;
+        }
         Matrix result = new Matrix(this.row, a.col);
 
         for (int i = 0; i < this.row; i++) {
@@ -67,5 +69,21 @@ public class Matrix {
 
     public JProgressBar getProgressBar() {
         return progressBar;
+    }
+
+    public int getRows() {
+        return row;
+    }
+
+    public int getCols() {
+        return col;
+    }
+
+    public double getValue(int i, int j) {
+        return matrix[i][j];
+    }
+
+    public void setValue(int i, int j, double value) {
+        matrix[i][j] = value;
     }
 }

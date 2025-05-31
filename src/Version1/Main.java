@@ -10,9 +10,10 @@ public class Main {
         Matrix result;
         Timer timer = new Timer();
 
-        runTest(500, timer);
+//        runTest(500, timer);
+//        runTest(1000, timer);
+//        runTest(5000, timer);
         runTest(1000, timer);
-        runTest(5000, timer);
     }
 
     public static void runTest(int size, Timer timer) {
